@@ -33,6 +33,8 @@ yilonce_tarih = bugun_tarih - timedelta(days=365)
 yilonce = yilonce_tarih.strftime("%d-%m-%Y")
 ikiyilonce_tarih = bugun_tarih - timedelta(days=730)
 ikiyilonce = ikiyilonce_tarih.strftime("%d-%m-%Y")
+ucayonce_tarih = bugun_tarih - timedelta(days=90)
+ucayonce = ucayonce_tarih.strftime("%d-%m-%Y")
 
 
 fig, axes = plt.subplots(4,4,figsize=(6*4,4*3))
@@ -137,7 +139,7 @@ tcmbnetfonlama.rename(columns={'TP_APIFON3':'API Net Fonlama'},inplace=True)
 GrafikCiz(tcmbnetfonlama,1,1)
 
 print("Swap Verisi Aliniyor ...")
-bankaswap = evds.get_data(['TP.TLDOV01.SWP'], startdate="01-06-2023", enddate=bugun)
+bankaswap = evds.get_data(['TP.TLDOV01.SWP'], startdate=ucayonce, enddate=bugun)
 bankaswap.rename(columns={'TP_TLDOV01_SWP':'TL DOLAR Swap'},inplace=True)
 GrafikCiz(bankaswap,1,2)
 
