@@ -19,7 +19,7 @@ evds = evdsAPI('Beni_Sil_Api_Key_Yaz') #<<<<<< API KEY  Tırnakların içine GIR
 
 
 # Varsayılan argüman değeri
-default_arg = 1
+arg_value = 1
 
 # Komut satırından argüman alın. Eğer argüman verilmezse, varsayılan değeri kullan.
 if len(sys.argv) > 1:
@@ -30,14 +30,12 @@ if len(sys.argv) > 1:
             print(f"Alınan argüman: {arg_value}, {arg_value} yıllık veriler alınıyor")
         else:
             print("Hata: Argüman 1 ile 10 arasında bir değer olmalıdır.")
-            arg_value = default_arg
             print(f"Varsayılan argüman değeri kullanılıyor: {arg_value}")
     except ValueError:
         print("Hata: Argüman bir sayı olmalıdır.")
-        arg_value = default_arg
-        print(f"Varsayılan argüman değeri kullanılıyor: {arg_value}")
+        print(f"Varsayılan argüman değeri kullanılıyor: 1")
 else:
-    print(f"Argüman girilmedi. Varsayılan olarak {default_arg} yıllık veriler alınıyor")
+    print(f"Argüman girilmedi. Varsayılan olarak yıllık veriler alınıyor")
 
 
 
