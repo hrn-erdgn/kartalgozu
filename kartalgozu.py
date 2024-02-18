@@ -8,6 +8,7 @@ import matplotlib.dates as mdates
 from matplotlib.ticker import FuncFormatter
 import time
 import matplotlib
+import sys
 
 
 
@@ -17,7 +18,26 @@ evds = evdsAPI('Beni_Sil_Api_Key_Yaz') #<<<<<< API KEY  Tırnakların içine GIR
 ####################################################################################
 
 
+# Varsayılan argüman değeri
+default_arg = 1
 
+# Komut satırından argüman alın. Eğer argüman verilmezse, varsayılan değeri kullan.
+if len(sys.argv) > 1:
+    try:
+        # İlk argümanı int'e çevir ve kontrol et
+        arg_value = int(sys.argv[1])
+        if 1 <= arg_value <= 10:
+            print(f"Alınan argüman: {arg_value}, {arg_value} yıllık veriler alınıyor")
+        else:
+            print("Hata: Argüman 1 ile 10 arasında bir değer olmalıdır.")
+            arg_value = default_arg
+            print(f"Varsayılan argüman değeri kullanılıyor: {arg_value}")
+    except ValueError:
+        print("Hata: Argüman bir sayı olmalıdır.")
+        arg_value = default_arg
+        print(f"Varsayılan argüman değeri kullanılıyor: {arg_value}")
+else:
+    print(f"Argüman girilmedi. Varsayılan olarak {default_arg} yıllık veriler alınıyor")
 
 
 
@@ -27,9 +47,13 @@ matplotlib.use('TkAgg')
 
 #plt.style.use('Solarize_Light2')
 
+
+gunler = arg_value * 365
+
+
 bugun_tarih = datetime.now().date()
 bugun = bugun_tarih.strftime("%d-%m-%Y")
-yilonce_tarih = bugun_tarih - timedelta(days=365)
+yilonce_tarih = bugun_tarih - timedelta(days=gunler)
 yilonce = yilonce_tarih.strftime("%d-%m-%Y")
 ikiyilonce_tarih = bugun_tarih - timedelta(days=730)
 ikiyilonce = ikiyilonce_tarih.strftime("%d-%m-%Y")
@@ -139,7 +163,7 @@ tcmbnetfonlama.rename(columns={'TP_APIFON3':'API Net Fonlama'},inplace=True)
 GrafikCiz(tcmbnetfonlama,1,1)
 
 print("Swap Verisi Aliniyor ...")
-bankaswap = evds.get_data(['TP.TLDOV01.SWP'], startdate=ucayonce, enddate=bugun)
+bankaswap = evds.get_data(['TP.TLDOV01.SWP'], startdate=yilonce, enddate=bugun)
 bankaswap.rename(columns={'TP_TLDOV01_SWP':'TL DOLAR Swap'},inplace=True)
 GrafikCiz(bankaswap,1,2)
 
