@@ -250,6 +250,7 @@ print("TLRef Verisi Aliniyor ...")
 
 tlref = evds.get_data(["TP.BISTTLREF.ORAN"], startdate=yilonce, enddate=bugun)
 tlref.rename(columns={'TP_BISTTLREF_ORAN' : 'TLRef Faizi'}, inplace=True)
+tlref['TLRef Faizi Bilesik'] = (((tlref['TLRef Faizi']*1/36500+1) ** (365/1)) -1) * 100
 GrafikCiz(tlref,3,3)
 
 print("Likidite Verileri Aliniyor ...")
