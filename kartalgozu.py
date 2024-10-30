@@ -116,9 +116,10 @@ def GrafikCiz(veri, x, y, parametre):
     cizilecek_axes[x][y].set_xlim(veri["Tarih"].min(), veri["Tarih"].max())
     cizilecek_axes[x][y].set_title(str(veri["Tarih"].iloc[-1]))
     cizilecek_axes[x][y].legend(loc="upper left")
-    cizilecek_axes[x][y].grid(alpha=0.5)
+    cizilecek_axes[x][y].grid(alpha=0.8)
     cizilecek_axes[x][y].yaxis.set_major_formatter(formatter)
     cizilecek_axes[x][y].tick_params(axis='x', rotation=45, labelsize=8)
+    cizilecek_axes[x][y].tick_params(axis='y', rotation=45, labelsize=6)
     if(veri[tur]<0).any():
         cizilecek_axes[x][y].axhline(0, color='black', ls='--', linewidth=1)
 
@@ -280,29 +281,64 @@ print("Enflasyon Verileri Aliniyor ...")
 yillikenflasyon = evds.get_data(["TP.FG.J0"], startdate=yilonce, enddate=bugun, formulas=[3])
 yillikenflasyon.drop(["TP_FG_J0"], axis=1, inplace=True)
 Yuzdedegisimformatla(yillikenflasyon)
-yillikenflasyon.rename(columns={"TP_FG_J0-3": "Yillik Enflasyon"}, inplace=True)
+yillikenflasyon.rename(columns={"TP_FG_J0-3": "Yillik TÜFE"}, inplace=True)
+ufeyillik = evds.get_data(['TP.TUFE1YI.T1'], startdate=yilonce, enddate=bugun, formulas=[3])
+ufeyillik.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True)
+Yuzdedegisimformatla(ufeyillik)
+ufeyillik.rename(columns={"TP_TUFE1YI_T1-3": "Yillik ÜFE"}, inplace=True)
+yillikenflasyon["Yillik ÜFE"] = ufeyillik["Yillik ÜFE"]
 GrafikCiz(yillikenflasyon,0,0,2) # TARIHLER AY TARIH olarak geliyor gun ay yil olarak gelmeli
 axes2[0][0].set_ylim(bottom=0)
-
-aylikenflasyon = evds.get_data(["TP.FG.J0"], startdate=yilonce, enddate=bugun, formulas=[1])
-aylikenflasyon.drop(["TP_FG_J0"], axis=1, inplace=True)
-Yuzdedegisimformatla(aylikenflasyon)
-aylikenflasyon.rename(columns={"TP_FG_J0-1": "Aylik Enflasyon"}, inplace=True)
-
+#=========================== aylik ===================================
+ayliktufe = evds.get_data(["TP.FG.J0"], startdate=yilonce, enddate=bugun, formulas=[1])
+ayliktufe.drop(["TP_FG_J0"], axis=1, inplace=True)
+Yuzdedegisimformatla(ayliktufe)
+ayliktufe.rename(columns={"TP_FG_J0-1": "Aylik TÜFE"}, inplace=True)
+aylikufe = evds.get_data(['TP.TUFE1YI.T1'], startdate=yilonce, enddate=bugun, formulas=[1])
+aylikufe.drop(["TP_TUFE1YI_T1"],axis=1, inplace=True)
+Yuzdedegisimformatla(aylikufe)
+aylikufe.rename(columns={"TP_TUFE1YI_T1-1": "Aylik ÜFE"}, inplace=True)
 aylikenflasyonax = axes2[0][0].twinx()
-aylikenflasyonax.set_ylabel("Aylik Enflasyon", color='orange')
-aylikenflasyonbarlari = aylikenflasyonax.bar(aylikenflasyon['Tarih'], aylikenflasyon['Aylik Enflasyon'], color='orange',alpha=0.5)
-axes2[0][0].bar_label(aylikenflasyonbarlari,fmt='%.2f')
+bar_width = 0.35
+x = range(len(ayliktufe))
+ayliktufebarlari = aylikenflasyonax.bar([pos - bar_width / 2 for pos in x], ayliktufe['Aylik TÜFE'], bar_width, color='tab:blue',alpha=0.8)
+ufeaylikbarlari = aylikenflasyonax.bar([pos + bar_width / 2 for pos in x] , aylikufe['Aylik ÜFE'], bar_width, color='orange',alpha=0.8)
+aylikenflasyonax.bar_label(ayliktufebarlari, fmt='%.1f', padding=1,fontsize=6)
+aylikenflasyonax.bar_label(ufeaylikbarlari, fmt='%.1f', padding=1,fontsize=6)
 axes2[0][0].margins(x=0.1)
-aylikenflasyonmaksdegeri = max(aylikenflasyon['Aylik Enflasyon'])
+axes2[0][0].set_xlim(-0.5, len(ayliktufe) - 0.5)
+aylikenflasyonmaksdegeri = max(ayliktufe['Aylik TÜFE'].max(),aylikufe['Aylik ÜFE'].max())
 aylikenflasyonax.set_ylim(top=aylikenflasyonmaksdegeri *2)
 
-####################################################################################################################################
+
+################################################ KONUT FIYAT ENDEKSI ###############################################################
+
+print("Konut Fiyat Endeksi Verileri Aliniyor ...")
+konutfiyatendeksiyillik = evds.get_data(["TP.KFE.TR"], startdate=yilonce, enddate=bugun, formulas=[3])
+konutfiyatendeksiyillik.drop(["TP_KFE_TR"], axis=1, inplace=True)
+Yuzdedegisimformatla(konutfiyatendeksiyillik)
+konutfiyatendeksiyillik.rename(columns={"TP_KFE_TR-3": "Konut Fiyat Endeksi Yillik Degisim"}, inplace=True)
+GrafikCiz(konutfiyatendeksiyillik,0,1,2)
+axes2[0][1].set_ylim(bottom=0)
 
 
+#=============================== kfe aylik ==================================
+
+konutfiyatendeksiaylik = evds.get_data(["TP.KFE.TR"], startdate=yilonce, enddate=bugun, formulas=[1])
+konutfiyatendeksiaylik.drop(["TP_KFE_TR"], axis=1, inplace=True)
+Yuzdedegisimformatla(konutfiyatendeksiaylik)
+konutfiyatendeksiaylik.rename(columns={"TP_KFE_TR-1": "K.F.E Aylik Değişim"}, inplace=True)
+
+konutfiyatendeksiax = axes2[0][1].twinx()
+konutfiyatendeksiaylikbarlari = konutfiyatendeksiax.bar(konutfiyatendeksiaylik['Tarih'], konutfiyatendeksiaylik['K.F.E Aylik Değişim'], color='tab:blue',alpha=0.8)
+konutfiyatendeksiax.bar_label(konutfiyatendeksiaylikbarlari, fmt='%.1f')
+konutfiyatendeksiaylikbarlarimaksdegeri = max(konutfiyatendeksiaylik['K.F.E Aylik Değişim'])
+konutfiyatendeksiax.set_ylim(top=konutfiyatendeksiaylikbarlarimaksdegeri *2)
+
+axes2[0][1].set_xlim(-0.5, len(konutfiyatendeksiaylik) - 0.5)
 
 
-
+###################################################################################################################################
 
 ######## 1. Pencereyi Goster ################
 fig.text(0.5 ,0.03 , 'Tarih: ' + bugun, ha='center', va='center', fontsize=15, color='gray',  weight='bold') 
