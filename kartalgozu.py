@@ -55,8 +55,8 @@ yilonce_tarih = bugun_tarih - timedelta(days=gunler)
 yilonce = yilonce_tarih.strftime("%d-%m-%Y")
 ikiyilonce_tarih = bugun_tarih - timedelta(days=730)
 ikiyilonce = ikiyilonce_tarih.strftime("%d-%m-%Y")
-ucayonce_tarih = bugun_tarih - timedelta(days=90)
-ucayonce = ucayonce_tarih.strftime("%d-%m-%Y")
+onucaylik_tarih = bugun_tarih - timedelta(days=arg_value * 396)
+onikiaylikver = onucaylik_tarih.strftime("%d-%m-%Y")
 
 
 fig, axes = plt.subplots(4,4,figsize=(6*4,4*3))
@@ -278,11 +278,11 @@ GrafikCiz(likidite,1,3,1)
 
 ################################################ ENFLASYON GRAFIGI BOLGESI ########################################################
 print("Enflasyon Verileri Aliniyor ...")
-yillikenflasyon = evds.get_data(["TP.FG.J0"], startdate=yilonce, enddate=bugun, formulas=[3])
+yillikenflasyon = evds.get_data(["TP.FG.J0"], startdate=onikiaylikver, enddate=bugun, formulas=[3])
 yillikenflasyon.drop(["TP_FG_J0"], axis=1, inplace=True)
 Yuzdedegisimformatla(yillikenflasyon)
 yillikenflasyon.rename(columns={"TP_FG_J0-3": "Yillik TÜFE"}, inplace=True)
-ufeyillik = evds.get_data(['TP.TUFE1YI.T1'], startdate=yilonce, enddate=bugun, formulas=[3])
+ufeyillik = evds.get_data(['TP.TUFE1YI.T1'], startdate=onikiaylikver, enddate=bugun, formulas=[3])
 ufeyillik.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True)
 Yuzdedegisimformatla(ufeyillik)
 ufeyillik.rename(columns={"TP_TUFE1YI_T1-3": "Yillik ÜFE"}, inplace=True)
@@ -290,11 +290,11 @@ yillikenflasyon["Yillik ÜFE"] = ufeyillik["Yillik ÜFE"]
 GrafikCiz(yillikenflasyon,0,0,2) # TARIHLER AY TARIH olarak geliyor gun ay yil olarak gelmeli
 axes2[0][0].set_ylim(bottom=0)
 #=========================== aylik ===================================
-ayliktufe = evds.get_data(["TP.FG.J0"], startdate=yilonce, enddate=bugun, formulas=[1])
+ayliktufe = evds.get_data(["TP.FG.J0"], startdate=onikiaylikver, enddate=bugun, formulas=[1])
 ayliktufe.drop(["TP_FG_J0"], axis=1, inplace=True)
 Yuzdedegisimformatla(ayliktufe)
 ayliktufe.rename(columns={"TP_FG_J0-1": "Aylik TÜFE"}, inplace=True)
-aylikufe = evds.get_data(['TP.TUFE1YI.T1'], startdate=yilonce, enddate=bugun, formulas=[1])
+aylikufe = evds.get_data(['TP.TUFE1YI.T1'], startdate=onikiaylikver, enddate=bugun, formulas=[1])
 aylikufe.drop(["TP_TUFE1YI_T1"],axis=1, inplace=True)
 Yuzdedegisimformatla(aylikufe)
 aylikufe.rename(columns={"TP_TUFE1YI_T1-1": "Aylik ÜFE"}, inplace=True)
@@ -314,7 +314,7 @@ aylikenflasyonax.set_ylim(top=aylikenflasyonmaksdegeri *2)
 ################################################ KONUT FIYAT ENDEKSI ###############################################################
 
 print("Konut Fiyat Endeksi Verileri Aliniyor ...")
-konutfiyatendeksiyillik = evds.get_data(["TP.KFE.TR"], startdate=yilonce, enddate=bugun, formulas=[3])
+konutfiyatendeksiyillik = evds.get_data(["TP.KFE.TR"], startdate=onikiaylikver, enddate=bugun, formulas=[3])
 konutfiyatendeksiyillik.drop(["TP_KFE_TR"], axis=1, inplace=True)
 Yuzdedegisimformatla(konutfiyatendeksiyillik)
 konutfiyatendeksiyillik.rename(columns={"TP_KFE_TR-3": "Konut Fiyat Endeksi Yillik Degisim"}, inplace=True)
@@ -324,7 +324,7 @@ axes2[0][1].set_ylim(bottom=0)
 
 #=============================== kfe aylik ==================================
 
-konutfiyatendeksiaylik = evds.get_data(["TP.KFE.TR"], startdate=yilonce, enddate=bugun, formulas=[1])
+konutfiyatendeksiaylik = evds.get_data(["TP.KFE.TR"], startdate=onikiaylikver, enddate=bugun, formulas=[1])
 konutfiyatendeksiaylik.drop(["TP_KFE_TR"], axis=1, inplace=True)
 Yuzdedegisimformatla(konutfiyatendeksiaylik)
 konutfiyatendeksiaylik.rename(columns={"TP_KFE_TR-1": "K.F.E Aylik Değişim"}, inplace=True)
@@ -340,6 +340,44 @@ axes2[0][1].set_xlim(-0.5, len(konutfiyatendeksiaylik) - 0.5)
 
 ###################################################################################################################################
 
+############################################# GENEL BÜTÇE DENGESİ  ###################################################
+butce = evds.get_data(["TP.KB.GEL001", "TP.KB.GID001"], startdate=onikiaylikver, enddate=bugun)
+butce.rename(columns={"TP_KB_GEL001": "Bütçe Gelirleri", "TP_KB_GID001": "Bütçe Giderleri"}, inplace=True)
+butce["Bütçe Dengesi"] = butce["Bütçe Gelirleri"] - butce["Bütçe Giderleri"]
+Yuzdedegisimformatla(butce)
+butcegrafik = pd.DataFrame()
+butcegrafik["Tarih"] = butce['Tarih']
+butcegrafik["Bütçe Dengesi(Bin TL)"] = butce['Bütçe Dengesi']
+GrafikCiz(butcegrafik,0,2,2)
+
+
+
+
+
+butcedengesiax = axes2[0][2].twinx()
+butcegelirbarlari = butcedengesiax.bar([pos - bar_width / 2 for pos in x], butce['Bütçe Gelirleri'], bar_width, color="tab:green", alpha=0.8)
+butcegiderbarlari = butcedengesiax.bar([pos + bar_width / 2 for pos in x], butce['Bütçe Giderleri'], bar_width, color="tab:red", alpha=0.8)
+butcedengesiax.bar_label(butcegelirbarlari, labels=[degerformatla(bar.get_height(), '') for bar in butcegelirbarlari], fontsize=5, weight='bold', color="green")
+butcedengesiax.bar_label(butcegiderbarlari, labels=[degerformatla(bar.get_height(), '') for bar in butcegiderbarlari], fontsize=5, weight='bold', color="red")
+
+
+butceverisimax = max(butce['Bütçe Giderleri'].max(), butce['Bütçe Gelirleri'].max())
+butcedengesiax.set_ylim(top=butceverisimax * 2)
+axes2[0][2].set_xlim(-0.5, len(butce) - 0.5)
+
+#bar_width = 0.35
+#x = range(len(ayliktufe))
+#ayliktufebarlari = aylikenflasyonax.bar([pos - bar_width / 2 for pos in x], ayliktufe['Aylik TÜFE'], bar_width, color='tab:blue',alpha=0.8)
+#ufeaylikbarlari = aylikenflasyonax.bar([pos + bar_width / 2 for pos in x] , aylikufe['Aylik ÜFE'], bar_width, color='orange',alpha=0.8)
+
+#butcedengesiax.bar_label(butcedengesibarlari, labels=[degerformatla(bar.get_height(),'') for bar in butcedengesibarlari])
+#print(butce)
+
+
+
+
+
+####################################################################################################################
 ######## 1. Pencereyi Goster ################
 fig.text(0.5 ,0.03 , 'Tarih: ' + bugun, ha='center', va='center', fontsize=15, color='gray',  weight='bold') 
 fig.text(0.9 ,0.03 , 'Credits: Harun Erdoğan Github:hrn-erdgn Twitter:harun_erdgn ', ha='center', va='center', fontsize=8, color='gray', alpha=0.7 ) 

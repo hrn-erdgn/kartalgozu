@@ -2,7 +2,9 @@
 
 Bu proje, Türkiye Cumhuriyet Merkez Bankası'nın (TCMB) Elektronik Veri Dağıtım Sistemi'nden (EVDS) makroekonomik verileri çekip, bu verileri anlamlı grafikler haline getiren bir Python uygulamasıdır.
 
-![SS](https://github.com/hrn-erdgn/kartalgozu/blob/main/kartalgozu.jpg)
+![SS](https://github.com/hrn-erdgn/kartalgozu/blob/main/kartalgozu1.jpg)
+![SS](https://github.com/hrn-erdgn/kartalgozu/blob/main/kartalgozu2.jpg)
+(2. Pencere eklenmiş ve geliştirme aşamasındadır.) 
 ### Önkoşullar
 Bu projeyi çalıştırmadan önce, Python'un yüklü olduğundan ve aşağıdaki kütüphanelerin kurulu olduğundan emin olun:
 - matplotlib
