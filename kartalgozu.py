@@ -353,7 +353,7 @@ GrafikCiz(butcegrafik,0,2,2)
 
 
 
-
+x = range(len(butce))
 butcedengesiax = axes2[0][2].twinx()
 butcegelirbarlari = butcedengesiax.bar([pos - bar_width / 2 for pos in x], butce['Bütçe Gelirleri'], bar_width, color="tab:green", alpha=0.8)
 butcegiderbarlari = butcedengesiax.bar([pos + bar_width / 2 for pos in x], butce['Bütçe Giderleri'], bar_width, color="tab:red", alpha=0.8)
