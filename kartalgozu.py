@@ -365,14 +365,30 @@ butceverisimax = max(butce['Bütçe Giderleri'].max(), butce['Bütçe Gelirleri'
 butcedengesiax.set_ylim(top=butceverisimax * 2)
 axes2[0][2].set_xlim(-0.5, len(butce) - 0.5)
 
-#bar_width = 0.35
-#x = range(len(ayliktufe))
-#ayliktufebarlari = aylikenflasyonax.bar([pos - bar_width / 2 for pos in x], ayliktufe['Aylik TÜFE'], bar_width, color='tab:blue',alpha=0.8)
-#ufeaylikbarlari = aylikenflasyonax.bar([pos + bar_width / 2 for pos in x] , aylikufe['Aylik ÜFE'], bar_width, color='orange',alpha=0.8)
+####################################################################################################################
+########################################## REEL KESIM GUVEN ENDEKSI MEVSIMSELLIKTEN ARINDIRILMIS ##################
 
-#butcedengesiax.bar_label(butcedengesibarlari, labels=[degerformatla(bar.get_height(),'') for bar in butcedengesibarlari])
-#print(butce)
+print("Reel Kesim Guven Endeksi Mevsimsillikten arindirilmis...")
+reelkesimguvene = evds.get_data(["TP.GY1.N2.MA"], startdate=onikiaylikver, enddate=bugun)
+Yuzdedegisimformatla(reelkesimguvene)
+reelkesimguvene.rename(columns={"TP_GY1_N2_MA": "Reel Kesim Guven Endeksi"}, inplace=True)
+GrafikCiz(reelkesimguvene,0,3,2)
 
+
+#=============================== reel kesim guven endeksi aylik ==================================
+
+reelkesimguveneaylik = evds.get_data(["TP.GY1.N2.MA"], startdate=onikiaylikver, enddate=bugun, formulas=[2])
+reelkesimguveneaylik.drop(["TP_GY1_N2_MA"], axis=1, inplace=True)
+Yuzdedegisimformatla(reelkesimguveneaylik)
+reelkesimguveneaylik.rename(columns={"TP_GY1_N2_MA-2": "Reel Kesim Guven E. Aylik"}, inplace=True)
+
+reelkesimguveneax = axes2[0][3].twinx()
+reelkesimguveneaylikbarlari = reelkesimguveneax.bar(reelkesimguveneaylik['Tarih'], reelkesimguveneaylik['Reel Kesim Guven E. Aylik'], color='tab:blue',alpha=0.4)
+reelkesimguveneax.bar_label(reelkesimguveneaylikbarlari, fmt='%.1f', alpha=0.4)
+reelkesimguveneaylikbarlarimaksdegeri = max(reelkesimguveneaylik['Reel Kesim Guven E. Aylik'])
+reelkesimguveneax.set_ylim(top=reelkesimguveneaylikbarlarimaksdegeri *2)
+
+axes2[0][3].set_xlim(-0.5, len(reelkesimguveneaylik) - 0.5)
 
 
 
