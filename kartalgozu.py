@@ -366,13 +366,20 @@ butcedengesiax.set_ylim(top=butceverisimax * 2)
 axes2[0][2].set_xlim(-0.5, len(butce) - 0.5)
 
 ####################################################################################################################
+############################### ISSIZLIK ################################################################
+print("Issizlik Orani aliniyor...")
+issizlik = evds.get_data(["TP.TIG08"], startdate=onikiaylikver, enddate=bugun)
+issizlik.rename(columns={"TP_TIG08": "İşsizlik oranı %"}, inplace=True)
+Yuzdedegisimformatla(issizlik)
+GrafikCiz(issizlik,0,3,2)
+############################################################################################################
 ########################################## REEL KESIM GUVEN ENDEKSI MEVSIMSELLIKTEN ARINDIRILMIS ##################
 
 print("Reel Kesim Guven Endeksi Mevsimsillikten arindirilmis...")
 reelkesimguvene = evds.get_data(["TP.GY1.N2.MA"], startdate=onikiaylikver, enddate=bugun)
 Yuzdedegisimformatla(reelkesimguvene)
 reelkesimguvene.rename(columns={"TP_GY1_N2_MA": "Reel Kesim Guven Endeksi"}, inplace=True)
-GrafikCiz(reelkesimguvene,0,3,2)
+GrafikCiz(reelkesimguvene,1,0,2)
 
 
 #=============================== reel kesim guven endeksi aylik ==================================
@@ -382,17 +389,52 @@ reelkesimguveneaylik.drop(["TP_GY1_N2_MA"], axis=1, inplace=True)
 Yuzdedegisimformatla(reelkesimguveneaylik)
 reelkesimguveneaylik.rename(columns={"TP_GY1_N2_MA-2": "Reel Kesim Guven E. Aylik"}, inplace=True)
 
-reelkesimguveneax = axes2[0][3].twinx()
+reelkesimguveneax = axes2[1][0].twinx()
 reelkesimguveneaylikbarlari = reelkesimguveneax.bar(reelkesimguveneaylik['Tarih'], reelkesimguveneaylik['Reel Kesim Guven E. Aylik'], color='tab:blue',alpha=0.4)
 reelkesimguveneax.bar_label(reelkesimguveneaylikbarlari, fmt='%.1f', alpha=0.4)
 reelkesimguveneaylikbarlarimaksdegeri = max(reelkesimguveneaylik['Reel Kesim Guven E. Aylik'])
 reelkesimguveneax.set_ylim(top=reelkesimguveneaylikbarlarimaksdegeri *2)
 
-axes2[0][3].set_xlim(-0.5, len(reelkesimguveneaylik) - 0.5)
+axes2[1][0].set_xlim(-0.5, len(reelkesimguveneaylik) - 0.5)
+#########################################################################################################################
+###################################### Imalat Sanayi Kapasite Kullanim Orani Mevsimsellikten Arindirilmis ###############
+print("Imalat Sanayi Kapasite Kullanim Orani Mevsimsellikten Arindirilmis....")
+isku = evds.get_data(["TP.KKO.MA"], startdate=onikiaylikver, enddate=bugun)
+Yuzdedegisimformatla(isku)
+isku.rename(columns={"TP_KKO_MA": "Imalat Sanayi Kapasite Kullanim Orani"}, inplace=True)
+GrafikCiz(isku,1,1,2)
 
+#======================== imalat sanayi kapasite kullanim orani mevsimsellikten arindirilmis aylik ======================
 
+iskuaylik = evds.get_data(["TP.KKO.MA"], startdate=onikiaylikver, enddate=bugun, formulas=[2])
+iskuaylik.drop(["TP_KKO_MA"], axis=1, inplace=True)
+Yuzdedegisimformatla(iskuaylik)
+iskuaylik.rename(columns={"TP_KKO_MA-2": "Imalat Sanayi K.K Aylik"}, inplace=True)
+iskuaylikax = axes2[1][1].twinx()
+iskuaylikbarlari = iskuaylikax.bar(iskuaylik['Tarih'], iskuaylik['Imalat Sanayi K.K Aylik'], color='tab:blue', alpha=0.4)
+iskuaylikax.bar_label(iskuaylikbarlari, fmt="%.1f", alpha=0.4)
+iskuaylikbarlarimaksdegeri = max(iskuaylik['Imalat Sanayi K.K Aylik'])
+iskuaylikax.set_ylim(top=iskuaylikbarlarimaksdegeri *2)
+axes2[1][1].set_xlim(-0.5, len(iskuaylik) - 0.5)
+#########################################################################################################################
+################################## Tuketici Guven Endeksi Mevsimsellikten ARINDIRILMAMIS ################################
+print("Tuketici Guven Endeksi Verileri ....")
+tge = evds.get_data(["TP.TG2.Y01"], startdate=onikiaylikver, enddate=bugun)
+Yuzdedegisimformatla(tge)
+tge.rename(columns={"TP_TG2_Y01": "Tuketici Guven Endeksi"}, inplace=True)
+GrafikCiz(tge,1,2,2)
+#========================Tuketici Guven endeksi Aylik veriler ==============================================
 
-
+tgeaylik = evds.get_data(["TP.TG2.Y01"], startdate=onikiaylikver, enddate=bugun, formulas=[2])
+tgeaylik.drop(["TP_TG2_Y01"], axis=1, inplace=True)
+Yuzdedegisimformatla(tgeaylik)
+tgeaylik.rename(columns={"TP_TG2_Y01-2": "Tuketici Guven Endeksi Aylik"}, inplace=True)
+tgeaylikax = axes2[1][2].twinx()
+tgeaylikbarlari = tgeaylikax.bar(tgeaylik['Tarih'], tgeaylik['Tuketici Guven Endeksi Aylik'], color='tab:blue', alpha=0.4)
+tgeaylikax.bar_label(tgeaylikbarlari, fmt="%.1f", alpha=0.4)
+tgeaylikbarlarimaksdegeri = max(tgeaylik['Tuketici Guven Endeksi Aylik'])
+tgeaylikax.set_ylim(top=tgeaylikbarlarimaksdegeri*2)
+axes2[1][2].set_xlim(-0.5, len(tgeaylik) - 0.5)
 ####################################################################################################################
 ######## 1. Pencereyi Goster ################
 fig.text(0.5 ,0.03 , 'Tarih: ' + bugun, ha='center', va='center', fontsize=15, color='gray',  weight='bold') 
