@@ -88,8 +88,6 @@ def TarihFormatla(veri):
 
 
 
-
-
 def Yuzdedegisimformatla(veri):
     for tur in veri.columns[1:]:
         veri[tur]= pd.to_numeric(veri[tur], errors='coerce')
@@ -371,6 +369,7 @@ print("Issizlik Orani aliniyor...")
 issizlik = evds.get_data(["TP.TIG08"], startdate=onikiaylikver, enddate=bugun)
 issizlik.rename(columns={"TP_TIG08": "İşsizlik oranı %"}, inplace=True)
 Yuzdedegisimformatla(issizlik)
+issizlik['Tarih'] = pd.to_datetime(issizlik['Tarih'], format='%Y-%m', errors='coerce')
 GrafikCiz(issizlik,0,3,2)
 ############################################################################################################
 ########################################## REEL KESIM GUVEN ENDEKSI MEVSIMSELLIKTEN ARINDIRILMIS ##################
@@ -435,6 +434,16 @@ tgeaylikax.bar_label(tgeaylikbarlari, fmt="%.1f", alpha=0.4)
 tgeaylikbarlarimaksdegeri = max(tgeaylik['Tuketici Guven Endeksi Aylik'])
 tgeaylikax.set_ylim(top=tgeaylikbarlarimaksdegeri*2)
 axes2[1][2].set_xlim(-0.5, len(tgeaylik) - 0.5)
+
+################################################## Carry Trade ##########################################
+
+carrytrade = evds.get_data(["TP.DK.USD.A.YTL","TP.FG.J0","TP.BISTTLREF.ORAN"], startdate=onikiaylikver, enddate=bugun, formulas=[1,1,0])
+
+carrytrade.rename(columns={"TP_DK_USD_A_YTL-1": "Dolar TL Aylik Degisim", "TP_FG_J0-1": "Aylik Tufe", "TP_BISTTLREF_ORAN" : "TLRef Aylik(Faiz)"}, inplace=True)
+carrytrade['TLRef Aylik(Faiz)'] = (((carrytrade['TLRef Aylik(Faiz)']*1/36500+1) ** (365/12)) -1) * 100
+Yuzdedegisimformatla(carrytrade)
+carrytrade['Tarih'] = pd.to_datetime(carrytrade['Tarih'], format='%Y-%m', errors='coerce')
+GrafikCiz(carrytrade,1,3,2)
 ####################################################################################################################
 ######## 1. Pencereyi Goster ################
 fig.text(0.5 ,0.03 , 'Tarih: ' + bugun, ha='center', va='center', fontsize=15, color='gray',  weight='bold') 
