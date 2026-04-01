@@ -20,6 +20,14 @@ from utils import (
 )
 
 matplotlib.use('TkAgg')
+plt.style.use('dark_background')
+
+# Dark theme renkleri
+BG_COLOR = '#0d1117'
+PLOT_BG = '#161b22'
+GRID_COLOR = '#30363d'
+TEXT_COLOR = '#c9d1d9'
+ACCENT_COLOR = '#58a6ff'
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +61,19 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
         )
 
     ax.set_xlim(veri["Tarih"].min(), veri["Tarih"].max())
-    ax.set_title(str(veri["Tarih"].iloc[-1]))
-    ax.legend(loc="upper left")
-    ax.grid(alpha=0.8)
+    ax.set_title(str(veri["Tarih"].iloc[-1]), color=TEXT_COLOR, fontsize=9)
+    ax.legend(loc="upper left", fontsize=6, facecolor=PLOT_BG, edgecolor=GRID_COLOR,
+              labelcolor=TEXT_COLOR)
+    ax.set_facecolor(PLOT_BG)
+    ax.grid(alpha=0.3, color=GRID_COLOR)
     ax.yaxis.set_major_formatter(formatter)
-    ax.tick_params(axis='x', rotation=45, labelsize=8)
-    ax.tick_params(axis='y', rotation=45, labelsize=6)
+    ax.tick_params(axis='x', rotation=45, labelsize=8, colors=TEXT_COLOR)
+    ax.tick_params(axis='y', rotation=45, labelsize=6, colors=TEXT_COLOR)
+    for spine in ax.spines.values():
+        spine.set_color(GRID_COLOR)
     for col in data_cols:
         if (veri[col] < 0).any():
-            ax.axhline(0, color='black', ls='--', linewidth=1)
+            ax.axhline(0, color='#8b949e', ls='--', linewidth=1)
             break
 
 
@@ -163,6 +175,8 @@ def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formula
         if col != "Tarih" and "-3" not in col and col != "YEARWEEK":
             yillik.drop(col, axis=1, inplace=True, errors='ignore')
     yillik.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
+    yillik = tarih_formatla(yillik)
+    yillik.dropna(inplace=True)
     yuzde_degisim_formatla(yillik)
 
     veri_cols = [c for c in yillik.columns if c != "Tarih"]
@@ -170,21 +184,28 @@ def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formula
         return
 
     ax_twin = axes[position[0]][position[1]].twinx()
-    x = range(len(yillik))
+    tarihler_x = yillik["Tarih"]
     n = len(veri_cols)
-    bar_width = 0.8 / max(n, 1)
-    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
+    # Haftalık veri için bar genişliğini gün cinsinden hesapla
+    if len(tarihler_x) > 1:
+        from datetime import timedelta
+        delta = (tarihler_x.iloc[-1] - tarihler_x.iloc[0]) / len(tarihler_x)
+        bar_width = delta * 0.8 / max(n, 1)
+    else:
+        bar_width = 1
+    colors = ['tab:cyan', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
 
     for i, col in enumerate(veri_cols):
         offset = (i - n / 2 + 0.5) * bar_width
-        bars = ax_twin.bar([pos + offset for pos in x], yillik[col],
-                           bar_width, color=colors[i % len(colors)], alpha=0.4)
-        ax_twin.bar_label(bars, fmt='%.0f', fontsize=5, alpha=0.6)
+        x_pos = [t + offset for t in tarihler_x]
+        bars = ax_twin.bar(x_pos, yillik[col],
+                           bar_width, color=colors[i % len(colors)], alpha=0.3)
 
     max_val = yillik[veri_cols].max().max()
+    min_val = yillik[veri_cols].min().min()
     if max_val > 0:
-        ax_twin.set_ylim(top=max_val * 2.5)
-    axes[position[0]][position[1]].set_xlim(-0.5, len(yillik) - 0.5)
+        ax_twin.set_ylim(bottom=min(min_val * 1.1, 0), top=max_val * 2.5)
+    ax_twin.tick_params(axis='y', labelsize=6)
 
 
 def ciz_para_arzi(client, axes, tarihler):
@@ -495,8 +516,18 @@ def tum_grafikleri_ciz(client, yil: int):
     """Tüm grafikleri oluşturur ve gösterir."""
     tarihler = tarih_hesapla(yil)
 
-    fig, axes = plt.subplots(4, 4, figsize=(6 * 4, 4 * 3))
-    fig2, axes2 = plt.subplots(4, 4, figsize=(6 * 4, 4 * 3))
+    fig, axes = plt.subplots(4, 4, figsize=(6 * 4, 4 * 3), facecolor=BG_COLOR)
+    fig2, axes2 = plt.subplots(4, 4, figsize=(6 * 4, 4 * 3), facecolor=BG_COLOR)
+
+    # Boş subplot'ları da dark theme'e ayarla
+    for fig_axes in (axes, axes2):
+        for row in fig_axes:
+            for ax in row:
+                ax.set_facecolor(PLOT_BG)
+                ax.tick_params(colors=TEXT_COLOR)
+                ax.grid(alpha=0.3, color=GRID_COLOR)
+                for spine in ax.spines.values():
+                    spine.set_color(GRID_COLOR)
 
     # ---- Pencere 1: Basit grafikler ----
     basit_grafikleri_ciz(client, axes, WINDOW1_SIMPLE, tarihler, "daily")
@@ -525,10 +556,10 @@ def tum_grafikleri_ciz(client, yil: int):
     bugun = tarihler["bugun"]
     for fig_obj in (fig, fig2):
         fig_obj.text(0.5, 0.03, f'Tarih: {bugun}',
-                     ha='center', va='center', fontsize=15, color='gray', weight='bold')
+                     ha='center', va='center', fontsize=15, color=ACCENT_COLOR, weight='bold')
         fig_obj.text(0.9, 0.03,
                      'Credits: Harun Erdoğan Github:hrn-erdgn Twitter:harun_erdgn ',
-                     ha='center', va='center', fontsize=8, color='gray', alpha=0.7)
+                     ha='center', va='center', fontsize=8, color='#8b949e', alpha=0.7)
         fig_obj.subplots_adjust(left=0.03, right=0.96, top=0.96, hspace=0.45)
 
     plt.show()
