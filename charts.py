@@ -134,21 +134,57 @@ def ciz_bist_dolar(client, axes, tarihler):
     grafik_ciz(data, axes, (0, 2))
 
 
-def ciz_tl_krediler(client, axes, tarihler):
-    """TL Krediler düzey grafiği (Tüketici + Ticari + Diğer)."""
-    data = fetch_data(
-        client,
-        ['TP.HPBITABLO2.25', 'TP.HPBITABLO2.26', 'TP.HPBITABLO2.27'],
-        tarihler["yilonce"], tarihler["bugun"],
-    )
+def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formulas_series=None):
+    """Kredi düzey grafiği + yıllık değişim bar overlay.
+
+    Args:
+        series: Düzey seri kodları listesi
+        renames: Sütun yeniden adlandırma dict'i
+        position: (row, col) grafik pozisyonu
+        formulas_series: Yıllık değişim için seri kodları (None ise series kullanılır)
+    """
+    # Düzey çizgi grafiği
+    data = fetch_data(client, series, tarihler["yilonce"], tarihler["bugun"])
     if data is None or len(data) == 0:
         return
-    data.rename(columns={
-        "TP_HPBITABLO2_25": "TL Tüketici Kredisi",
-        "TP_HPBITABLO2_26": "TL Ticari Kredi",
-        "TP_HPBITABLO2_27": "TL Diğer Kredi",
-    }, inplace=True)
-    grafik_ciz(data, axes, (0, 3))
+    data.rename(columns=renames, inplace=True)
+    grafik_ciz(data, axes, position)
+
+    # Yıllık değişim bar grafikleri (twinx)
+    f_series = formulas_series or series
+    formulas_val = [3] * len(f_series)
+    yillik = fetch_data(client, f_series, tarihler["yilonce"], tarihler["bugun"],
+                        formulas=formulas_val)
+    if yillik is None or len(yillik) == 0:
+        return
+
+    # Orijinal düzey sütunlarını sil, sadece -3 (yıllık değişim) kalsın
+    for col in list(yillik.columns):
+        if col != "Tarih" and "-3" not in col and col != "YEARWEEK":
+            yillik.drop(col, axis=1, inplace=True, errors='ignore')
+    yillik.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
+    yuzde_degisim_formatla(yillik)
+
+    veri_cols = [c for c in yillik.columns if c != "Tarih"]
+    if not veri_cols:
+        return
+
+    ax_twin = axes[position[0]][position[1]].twinx()
+    x = range(len(yillik))
+    n = len(veri_cols)
+    bar_width = 0.8 / max(n, 1)
+    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
+
+    for i, col in enumerate(veri_cols):
+        offset = (i - n / 2 + 0.5) * bar_width
+        bars = ax_twin.bar([pos + offset for pos in x], yillik[col],
+                           bar_width, color=colors[i % len(colors)], alpha=0.4)
+        ax_twin.bar_label(bars, fmt='%.0f', fontsize=5, alpha=0.6)
+
+    max_val = yillik[veri_cols].max().max()
+    if max_val > 0:
+        ax_twin.set_ylim(top=max_val * 2.5)
+    axes[position[0]][position[1]].set_xlim(-0.5, len(yillik) - 0.5)
 
 
 def ciz_para_arzi(client, axes, tarihler):
@@ -161,7 +197,6 @@ def ciz_para_arzi(client, axes, tarihler):
     )
     if data is None or len(data) == 0:
         return
-    # Orijinal düzey sütunlarını sil (sadece yıllık değişim kalsın)
     for col in list(data.columns):
         if col != "Tarih" and "-3" not in col and col != "YEARWEEK":
             data.drop(col, axis=1, inplace=True, errors='ignore')
@@ -175,37 +210,42 @@ def ciz_para_arzi(client, axes, tarihler):
     grafik_ciz(data, axes, (2, 0))
 
 
-def ciz_yp_krediler(client, axes, tarihler):
-    """YP Krediler düzey grafiği (Tüketici + Ticari + Diğer)."""
-    data = fetch_data(
-        client,
-        ['TP.HPBITABLO2.29', 'TP.HPBITABLO2.30', 'TP.HPBITABLO2.31'],
-        tarihler["yilonce"], tarihler["bugun"],
-    )
-    if data is None or len(data) == 0:
-        return
-    data.rename(columns={
-        "TP_HPBITABLO2_29": "YP Tüketici Kredisi",
-        "TP_HPBITABLO2_30": "YP Ticari Kredi",
-        "TP_HPBITABLO2_31": "YP Diğer Kredi",
-    }, inplace=True)
-    grafik_ciz(data, axes, (2, 2))
-
-
 def ciz_toplam_kredi_tl_yp(client, axes, tarihler):
-    """TL vs YP Toplam Kredi karşılaştırma grafiği."""
-    data = fetch_data(
-        client,
-        ['TP.HPBITABLO2.24', 'TP.HPBITABLO2.28'],
-        tarihler["yilonce"], tarihler["bugun"],
+    """TL vs YP Toplam Kredi karşılaştırma + yıllık değişim bar."""
+    _ciz_kredi_grafik(
+        client, axes, tarihler,
+        series=['TP.HPBITABLO2.24', 'TP.HPBITABLO2.28'],
+        renames={"TP_HPBITABLO2_24": "TL Toplam Kredi", "TP_HPBITABLO2_28": "YP Toplam Kredi"},
+        position=(0, 3),
     )
-    if data is None or len(data) == 0:
-        return
-    data.rename(columns={
-        "TP_HPBITABLO2_24": "TL Toplam Kredi",
-        "TP_HPBITABLO2_28": "YP Toplam Kredi",
-    }, inplace=True)
-    grafik_ciz(data, axes, (2, 3))
+
+
+def ciz_yp_krediler(client, axes, tarihler):
+    """YP Krediler düzey + yıllık değişim bar."""
+    _ciz_kredi_grafik(
+        client, axes, tarihler,
+        series=['TP.HPBITABLO2.29', 'TP.HPBITABLO2.30', 'TP.HPBITABLO2.31'],
+        renames={
+            "TP_HPBITABLO2_29": "YP Tüketici Kredisi",
+            "TP_HPBITABLO2_30": "YP Ticari Kredi",
+            "TP_HPBITABLO2_31": "YP Diğer Kredi",
+        },
+        position=(2, 2),
+    )
+
+
+def ciz_tl_krediler(client, axes, tarihler):
+    """TL Krediler düzey + yıllık değişim bar."""
+    _ciz_kredi_grafik(
+        client, axes, tarihler,
+        series=['TP.HPBITABLO2.25', 'TP.HPBITABLO2.26', 'TP.HPBITABLO2.27'],
+        renames={
+            "TP_HPBITABLO2_25": "TL Tüketici Kredisi",
+            "TP_HPBITABLO2_26": "TL Ticari Kredi",
+            "TP_HPBITABLO2_27": "TL Diğer Kredi",
+        },
+        position=(2, 3),
+    )
 
 
 def ciz_tlref(client, axes, tarihler):
