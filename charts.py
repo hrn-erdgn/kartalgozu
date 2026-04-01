@@ -153,9 +153,14 @@ def ciz_m3_para_arzi(client, axes, tarihler):
         return
     data.drop('TP_PR_ARZ22', axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(data)
-    data["TP_PR_ARZ22-1"] = data["TP_PR_ARZ22-1"] * 52
-    data["3 Aylık H.O Yıllıklandırılmış %"] = data["TP_PR_ARZ22-1"].rolling(window=13).mean()
-    data.rename(columns={'TP_PR_ARZ22-1': 'M3 Para Arzı Haftalık Değişim Yıllıklandırılmış %'}, inplace=True)
+    # Tarih dışındaki ilk veri sütununu bul (API versiyonuna göre isim değişebilir)
+    veri_cols = [c for c in data.columns if c != "Tarih"]
+    if not veri_cols:
+        return
+    col = veri_cols[0]
+    data[col] = data[col] * 52
+    data["3 Aylık H.O Yıllıklandırılmış %"] = data[col].rolling(window=13).mean()
+    data.rename(columns={col: 'M3 Para Arzı Haftalık Değişim Yıllıklandırılmış %'}, inplace=True)
     grafik_ciz(data, axes, (2, 0))
 
 
@@ -232,7 +237,8 @@ def ciz_enflasyon(client, axes, tarihler):
         ufe.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True, errors='ignore')
         yuzde_degisim_formatla(ufe)
         ufe.rename(columns={"TP_TUFE1YI_T1-3": "Yillik ÜFE"}, inplace=True)
-        yillik["Yillik ÜFE"] = ufe["Yillik ÜFE"]
+        if "Yillik ÜFE" in ufe.columns:
+            yillik["Yillik ÜFE"] = ufe["Yillik ÜFE"]
 
     grafik_ciz(yillik, axes, (0, 0))
     axes[0][0].set_ylim(bottom=0)
