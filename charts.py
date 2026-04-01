@@ -37,9 +37,13 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
     veri.dropna(axis=1, how="all", inplace=True)
     veri.dropna(inplace=True)
     if "YEARWEEK" in veri.columns:
-        veri.drop("YEARWEEK", axis=1, inplace=True)
+        veri.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
 
-    for col in veri.columns[1:]:
+    data_cols = veri.columns[1:]
+    if len(data_cols) == 0:
+        return
+
+    for col in data_cols:
         cizgi, = ax.plot(veri["Tarih"], veri[col], label=col)
         ax.annotate(
             degerformatla(veri[col].iloc[-1], 1),
@@ -55,8 +59,10 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
     ax.yaxis.set_major_formatter(formatter)
     ax.tick_params(axis='x', rotation=45, labelsize=8)
     ax.tick_params(axis='y', rotation=45, labelsize=6)
-    if (veri[col] < 0).any():
-        ax.axhline(0, color='black', ls='--', linewidth=1)
+    for col in data_cols:
+        if (veri[col] < 0).any():
+            ax.axhline(0, color='black', ls='--', linewidth=1)
+            break
 
 
 def bar_grafik_ekle(ax_twin, x_range, veri1, veri2, label1, label2,
@@ -124,7 +130,7 @@ def ciz_bist_dolar(client, axes, tarihler):
     if data is None:
         return
     data["Bist100 $"] = data["TP_MK_F_BILESIK"] / data["TP_DK_USD_A_YTL"]
-    data.drop(['TP_MK_F_BILESIK', 'TP_DK_USD_A_YTL'], axis=1, inplace=True)
+    data.drop(['TP_MK_F_BILESIK', 'TP_DK_USD_A_YTL'], axis=1, inplace=True, errors='ignore')
     grafik_ciz(data, axes, (0, 2))
 
 
@@ -135,7 +141,7 @@ def ciz_kredi_hacmi_dolar(client, axes, tarihler):
     if data is None:
         return
     data["Toplam Kredi Hacmi $"] = data["TP_KREDI_L001"] / data["TP_DK_USD_A_YTL"]
-    data.drop(['TP_KREDI_L001', 'TP_DK_USD_A_YTL'], axis=1, inplace=True)
+    data.drop(['TP_KREDI_L001', 'TP_DK_USD_A_YTL'], axis=1, inplace=True, errors='ignore')
     grafik_ciz(data, axes, (0, 3))
 
 
@@ -145,7 +151,7 @@ def ciz_m3_para_arzi(client, axes, tarihler):
                       tarihler["yilonce"], tarihler["bugun"], formulas=[1])
     if data is None:
         return
-    data.drop('TP_PR_ARZ22', axis=1, inplace=True)
+    data.drop('TP_PR_ARZ22', axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(data)
     data["TP_PR_ARZ22-1"] = data["TP_PR_ARZ22-1"] * 52
     data["3 Aylık H.O Yıllıklandırılmış %"] = data["TP_PR_ARZ22-1"].rolling(window=13).mean()
@@ -159,7 +165,7 @@ def ciz_kredi_degisim(client, axes, tarihler):
     toplam = fetch_data(client, ['TP.KREDI.L001'],
                         tarihler["yilonce"], tarihler["bugun"], formulas=[1])
     if toplam is not None:
-        toplam.drop(["TP_KREDI_L001"], axis=1, inplace=True)
+        toplam.drop(["TP_KREDI_L001"], axis=1, inplace=True, errors='ignore')
         yuzde_degisim_formatla(toplam)
         toplam.rename(columns={'TP_KREDI_L001-1': 'Toplam Kredi Hacmi Değişim %'}, inplace=True)
         grafik_ciz(toplam, axes, (2, 2))
@@ -168,7 +174,7 @@ def ciz_kredi_degisim(client, axes, tarihler):
     tuketici = fetch_data(client, ['TP.BFTUKKRE.L002'],
                           tarihler["yilonce"], tarihler["bugun"], formulas=[1])
     if tuketici is not None:
-        tuketici.drop(['TP_BFTUKKRE_L002'], axis=1, inplace=True)
+        tuketici.drop(['TP_BFTUKKRE_L002'], axis=1, inplace=True, errors='ignore')
         yuzde_degisim_formatla(tuketici)
         tuketici.rename(columns={'TP_BFTUKKRE_L002-1': 'Tüketici ve Kredi Kartları Değişim %'}, inplace=True)
         grafik_ciz(tuketici, axes, (2, 2))
@@ -178,7 +184,7 @@ def ciz_kredi_degisim(client, axes, tarihler):
                        tarihler["yilonce"], tarihler["bugun"], formulas=[1])
     if konut is not None:
         yuzde_degisim_formatla(konut)
-        konut.drop(["TP_BFTUKKRE_L005"], axis=1, inplace=True)
+        konut.drop(["TP_BFTUKKRE_L005"], axis=1, inplace=True, errors='ignore')
         konut.rename(columns={'TP_BFTUKKRE_L005-1': 'Konut Kredisi Hacmi Değişim %'}, inplace=True)
         grafik_ciz(konut, axes, (2, 3))
 
@@ -186,7 +192,7 @@ def ciz_kredi_degisim(client, axes, tarihler):
     arac = fetch_data(client, ['TP.BFTUKKRE.L007'],
                       tarihler["yilonce"], tarihler["bugun"], formulas=[1])
     if arac is not None:
-        arac.drop(["TP_BFTUKKRE_L007"], axis=1, inplace=True)
+        arac.drop(["TP_BFTUKKRE_L007"], axis=1, inplace=True, errors='ignore')
         yuzde_degisim_formatla(arac)
         arac.rename(columns={'TP_BFTUKKRE_L007-1': 'Araç Kredisi Hacmi Değişim %'}, inplace=True)
         grafik_ciz(arac, axes, (2, 3))
@@ -216,14 +222,14 @@ def ciz_enflasyon(client, axes, tarihler):
     yillik = fetch_data(client, ["TP.FG.J0"], start, end, formulas=[3])
     if yillik is None:
         return
-    yillik.drop(["TP_FG_J0"], axis=1, inplace=True)
+    yillik.drop(["TP_FG_J0"], axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(yillik)
     yillik.rename(columns={"TP_FG_J0-3": "Yillik TÜFE"}, inplace=True)
 
     # Yıllık ÜFE
     ufe = fetch_data(client, ['TP.TUFE1YI.T1'], start, end, formulas=[3])
     if ufe is not None:
-        ufe.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True)
+        ufe.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True, errors='ignore')
         yuzde_degisim_formatla(ufe)
         ufe.rename(columns={"TP_TUFE1YI_T1-3": "Yillik ÜFE"}, inplace=True)
         yillik["Yillik ÜFE"] = ufe["Yillik ÜFE"]
@@ -235,7 +241,7 @@ def ciz_enflasyon(client, axes, tarihler):
     aylik_tufe = fetch_data(client, ["TP.FG.J0"], start, end, formulas=[1])
     if aylik_tufe is None:
         return
-    aylik_tufe.drop(["TP_FG_J0"], axis=1, inplace=True)
+    aylik_tufe.drop(["TP_FG_J0"], axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(aylik_tufe)
     aylik_tufe.rename(columns={"TP_FG_J0-1": "Aylik TÜFE"}, inplace=True)
 
@@ -243,7 +249,7 @@ def ciz_enflasyon(client, axes, tarihler):
     aylik_ufe = fetch_data(client, ['TP.TUFE1YI.T1'], start, end, formulas=[1])
     if aylik_ufe is None:
         return
-    aylik_ufe.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True)
+    aylik_ufe.drop(["TP_TUFE1YI_T1"], axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(aylik_ufe)
     aylik_ufe.rename(columns={"TP_TUFE1YI_T1-1": "Aylik ÜFE"}, inplace=True)
 
@@ -264,7 +270,7 @@ def ciz_konut_fiyat_endeksi(client, axes, tarihler):
     yillik = fetch_data(client, ["TP.KFE.TR"], start, end, formulas=[3])
     if yillik is None:
         return
-    yillik.drop(["TP_KFE_TR"], axis=1, inplace=True)
+    yillik.drop(["TP_KFE_TR"], axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(yillik)
     yillik.rename(columns={"TP_KFE_TR-3": "Konut Fiyat Endeksi Yillik Degisim"}, inplace=True)
     grafik_ciz(yillik, axes, (0, 1))
@@ -274,7 +280,7 @@ def ciz_konut_fiyat_endeksi(client, axes, tarihler):
     aylik = fetch_data(client, ["TP.KFE.TR"], start, end, formulas=[1])
     if aylik is None:
         return
-    aylik.drop(["TP_KFE_TR"], axis=1, inplace=True)
+    aylik.drop(["TP_KFE_TR"], axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(aylik)
     aylik.rename(columns={"TP_KFE_TR-1": "K.F.E Aylik Değişim"}, inplace=True)
 
@@ -354,7 +360,7 @@ def _ciz_guven_endeksi(client, axes, tarihler, series_code, col_name,
     aylik = fetch_data(client, [series_code], start, end, formulas=[2])
     if aylik is None:
         return
-    aylik.drop([col_name], axis=1, inplace=True)
+    aylik.drop([col_name], axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(aylik)
     aylik.rename(columns={f"{col_name}-2": renamed_monthly}, inplace=True)
 
