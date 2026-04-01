@@ -259,12 +259,19 @@ def ciz_enflasyon(client, axes, tarihler):
     yuzde_degisim_formatla(aylik_ufe)
     aylik_ufe.rename(columns={"TP_TUFE1YI_T1-1": "Aylik ÜFE"}, inplace=True)
 
+    # TÜFE ve ÜFE farklı satır sayısı döndürebilir, Tarih üzerinden hizala
+    aylik = pd.merge(aylik_tufe, aylik_ufe, on="Tarih", how="inner")
+    tufe_col = [c for c in aylik.columns if "TÜFE" in c or "tufe" in c.lower()]
+    ufe_col = [c for c in aylik.columns if "ÜFE" in c or "ufe" in c.lower()]
+    if not tufe_col or not ufe_col:
+        return
+
     ax_twin = axes[0][0].twinx()
-    x = range(len(aylik_tufe))
-    bar_grafik_ekle(ax_twin, x, aylik_tufe['Aylik TÜFE'], aylik_ufe['Aylik ÜFE'],
-                    "Aylik TÜFE", "Aylik ÜFE")
+    x = range(len(aylik))
+    bar_grafik_ekle(ax_twin, x, aylik[tufe_col[0]], aylik[ufe_col[0]],
+                    tufe_col[0], ufe_col[0])
     axes[0][0].margins(x=0.1)
-    axes[0][0].set_xlim(-0.5, len(aylik_tufe) - 0.5)
+    axes[0][0].set_xlim(-0.5, len(aylik) - 0.5)
 
 
 def ciz_konut_fiyat_endeksi(client, axes, tarihler):
