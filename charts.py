@@ -21,6 +21,7 @@ from utils import (
 
 matplotlib.use('TkAgg')
 plt.style.use('dark_background')
+matplotlib.rcParams['toolbar'] = 'None'
 
 # Dark theme renkleri
 BG_COLOR = '#0d1117'
@@ -29,7 +30,6 @@ GRID_COLOR = '#30363d'
 TEXT_COLOR = '#c9d1d9'
 ACCENT_COLOR = '#58a6ff'
 
-# Toolbar (NavigationToolbar) arka planını dark yap
 matplotlib.rcParams['figure.facecolor'] = BG_COLOR
 matplotlib.rcParams['savefig.facecolor'] = BG_COLOR
 matplotlib.rcParams['lines.linewidth'] = 1.0
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
-    """Temel çizgi grafiği çizer. Orijinal GrafikCiz fonksiyonunun karşılığı."""
+    """Temel çizgi grafiği çizer. Çizgi renklerini dict olarak döner."""
     x, y = position
     ax = axes[x][y]
 
@@ -53,11 +53,13 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
         veri.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
 
     data_cols = veri.columns[1:]
+    line_colors = {}
     if len(data_cols) == 0:
-        return
+        return line_colors
 
     for col in data_cols:
         cizgi, = ax.plot(veri["Tarih"], veri[col], label=col, linewidth=1.0)
+        line_colors[col] = cizgi.get_color()
         ax.annotate(
             degerformatla(veri[col].iloc[-1], 1),
             xy=(veri["Tarih"].iloc[-1], veri[col].iloc[-1]),
@@ -80,6 +82,7 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
         if (veri[col] < 0).any():
             ax.axhline(0, color='#8b949e', ls='--', linewidth=1)
             break
+    return line_colors
 
 
 def bar_grafik_ekle(ax_twin, x_range, veri1, veri2, label1, label2,
@@ -152,43 +155,38 @@ def ciz_bist_dolar(client, axes, tarihler):
 
 
 def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formulas_series=None):
-    """Kredi düzey grafiği + yıllık değişim bar overlay."""
+    """Kredi düzey grafiği + haftalık değişim bar overlay (aynı renklerle)."""
     # Düzey çizgi grafiği
     data = fetch_data(client, series, tarihler["yilonce"], tarihler["bugun"])
     if data is None or len(data) == 0:
         return
     data.rename(columns=renames, inplace=True)
-    grafik_ciz(data, axes, position)
+    line_colors = grafik_ciz(data, axes, position)
 
-    # Yıllık değişim: düzey verisinden kendimiz hesaplıyoruz
-    # (formulas=[3] yıllık değişim için 2 yıllık veri gerektirir, 1 yıllıkta "ND" döner)
-    raw = fetch_data(client, series, tarihler["yilonce"], tarihler["bugun"])
-    if raw is None or len(raw) == 0:
-        return
+    # Haftalık % değişimi düzey verisinden hesapla
+    raw = data.copy()
     raw = tarih_formatla(raw)
     raw.dropna(inplace=True)
-    raw.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
+    if "YEARWEEK" in raw.columns:
+        raw.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
 
     veri_cols = [c for c in raw.columns if c != "Tarih"]
     if not veri_cols:
         return
 
-    # Haftalık yüzde değişimi hesapla (düzeyden)
     for col in veri_cols:
         raw[col] = pd.to_numeric(raw[col], errors='coerce')
     raw.dropna(inplace=True)
 
     pct = pd.DataFrame()
     pct["Tarih"] = raw["Tarih"]
-    col_renames = {}
+    # Seri adı → renk eşleştirmesi için
+    color_map = {}
     for col in veri_cols:
         pct_col = f"{col} %Δ"
         pct[pct_col] = raw[col].pct_change() * 100
-        # Rename'deki karşılığını bul
-        display_name = renames.get(col, col)
-        col_renames[pct_col] = f"{display_name} %Δ"
+        color_map[pct_col] = line_colors.get(col, '#58a6ff') if line_colors else '#58a6ff'
     pct.dropna(inplace=True)
-    pct.rename(columns=col_renames, inplace=True)
 
     pct_cols = [c for c in pct.columns if c != "Tarih"]
     if not pct_cols:
@@ -198,7 +196,6 @@ def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formula
     from datetime import timedelta
     tarih_list = list(pct["Tarih"])
     n = len(pct_cols)
-    colors = ['tab:cyan', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
 
     if len(tarih_list) > 1:
         avg_delta = (tarih_list[-1] - tarih_list[0]).days / len(tarih_list)
@@ -210,7 +207,7 @@ def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formula
         offset_days = (i - n / 2 + 0.5) * bar_days
         x_pos = [t + timedelta(days=offset_days) for t in tarih_list]
         ax_twin.bar(x_pos, pct[col], width=bar_days,
-                    color=colors[i % len(colors)], alpha=0.3)
+                    color=color_map[col], alpha=0.3)
 
     max_val = pct[pct_cols].max().max()
     min_val = pct[pct_cols].min().min()
@@ -575,21 +572,12 @@ def tum_grafikleri_ciz(client, yil: int):
                      ha='center', va='center', fontsize=8, color='#8b949e', alpha=0.7)
         fig_obj.subplots_adjust(left=0.03, right=0.96, top=0.96, hspace=0.45)
 
-    # TkAgg toolbar ve pencere arka planını dark yap
+    # Pencere arka planını dark yap
     for fig_obj in (fig, fig2):
         try:
             manager = fig_obj.canvas.manager
             if manager and hasattr(manager, 'window'):
                 manager.window.configure(bg=BG_COLOR)
-                # Toolbar (NavigationToolbar2Tk)
-                if hasattr(manager, 'toolbar') and manager.toolbar:
-                    manager.toolbar.configure(bg=BG_COLOR)
-                    for child in manager.toolbar.winfo_children():
-                        try:
-                            child.configure(bg=BG_COLOR)
-                        except Exception:
-                            pass
-                # Canvas çevresi
                 fig_obj.canvas.get_tk_widget().configure(bg=BG_COLOR)
         except Exception:
             pass
