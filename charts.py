@@ -29,6 +29,11 @@ GRID_COLOR = '#30363d'
 TEXT_COLOR = '#c9d1d9'
 ACCENT_COLOR = '#58a6ff'
 
+# Toolbar (NavigationToolbar) arka planını dark yap
+matplotlib.rcParams['figure.facecolor'] = BG_COLOR
+matplotlib.rcParams['savefig.facecolor'] = BG_COLOR
+matplotlib.rcParams['lines.linewidth'] = 1.0
+
 logger = logging.getLogger(__name__)
 
 
@@ -52,7 +57,7 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
         return
 
     for col in data_cols:
-        cizgi, = ax.plot(veri["Tarih"], veri[col], label=col)
+        cizgi, = ax.plot(veri["Tarih"], veri[col], label=col, linewidth=1.0)
         ax.annotate(
             degerformatla(veri[col].iloc[-1], 1),
             xy=(veri["Tarih"].iloc[-1], veri[col].iloc[-1]),
@@ -184,28 +189,29 @@ def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formula
         return
 
     ax_twin = axes[position[0]][position[1]].twinx()
-    tarihler_x = yillik["Tarih"]
     n = len(veri_cols)
-    # Haftalık veri için bar genişliğini gün cinsinden hesapla
-    if len(tarihler_x) > 1:
-        from datetime import timedelta
-        delta = (tarihler_x.iloc[-1] - tarihler_x.iloc[0]) / len(tarihler_x)
-        bar_width = delta * 0.8 / max(n, 1)
-    else:
-        bar_width = 1
     colors = ['tab:cyan', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
 
+    # Tarih'i matplotlib date numbers'a çevir (offset hesabı için)
+    from datetime import timedelta
+    tarih_list = list(yillik["Tarih"])
+    if len(tarih_list) > 1:
+        avg_delta = (tarih_list[-1] - tarih_list[0]).days / len(tarih_list)
+        bar_days = avg_delta * 0.8 / max(n, 1)
+    else:
+        bar_days = 5
+
     for i, col in enumerate(veri_cols):
-        offset = (i - n / 2 + 0.5) * bar_width
-        x_pos = [t + offset for t in tarihler_x]
-        bars = ax_twin.bar(x_pos, yillik[col],
-                           bar_width, color=colors[i % len(colors)], alpha=0.3)
+        offset_days = (i - n / 2 + 0.5) * bar_days
+        x_pos = [t + timedelta(days=offset_days) for t in tarih_list]
+        ax_twin.bar(x_pos, yillik[col],
+                    width=bar_days, color=colors[i % len(colors)], alpha=0.3)
 
     max_val = yillik[veri_cols].max().max()
     min_val = yillik[veri_cols].min().min()
     if max_val > 0:
         ax_twin.set_ylim(bottom=min(min_val * 1.1, 0), top=max_val * 2.5)
-    ax_twin.tick_params(axis='y', labelsize=6)
+    ax_twin.tick_params(axis='y', labelsize=6, colors=TEXT_COLOR)
 
 
 def ciz_para_arzi(client, axes, tarihler):
