@@ -134,73 +134,78 @@ def ciz_bist_dolar(client, axes, tarihler):
     grafik_ciz(data, axes, (0, 2))
 
 
-def ciz_kredi_hacmi_dolar(client, axes, tarihler):
-    """Toplam Kredi Hacmi $ cinsinden grafiği."""
-    data = fetch_data(client, ['TP.KREDI.L001', 'TP.DK.USD.A.YTL'],
-                      tarihler["yilonce"], tarihler["bugun"])
-    if data is None:
+def ciz_tl_krediler(client, axes, tarihler):
+    """TL Krediler düzey grafiği (Tüketici + Ticari + Diğer)."""
+    data = fetch_data(
+        client,
+        ['TP.HPBITABLO2.25', 'TP.HPBITABLO2.26', 'TP.HPBITABLO2.27'],
+        tarihler["yilonce"], tarihler["bugun"],
+    )
+    if data is None or len(data) == 0:
         return
-    data["Toplam Kredi Hacmi $"] = data["TP_KREDI_L001"] / data["TP_DK_USD_A_YTL"]
-    data.drop(['TP_KREDI_L001', 'TP_DK_USD_A_YTL'], axis=1, inplace=True, errors='ignore')
+    data.rename(columns={
+        "TP_HPBITABLO2_25": "TL Tüketici Kredisi",
+        "TP_HPBITABLO2_26": "TL Ticari Kredi",
+        "TP_HPBITABLO2_27": "TL Diğer Kredi",
+    }, inplace=True)
     grafik_ciz(data, axes, (0, 3))
 
 
-def ciz_m3_para_arzi(client, axes, tarihler):
-    """M3 Para Arzı haftalık değişim yıllıklandırılmış % grafiği."""
-    data = fetch_data(client, ['TP.PR.ARZ22'],
-                      tarihler["yilonce"], tarihler["bugun"], formulas=[1])
-    if data is None:
+def ciz_para_arzi(client, axes, tarihler):
+    """M1/M2/M3 Para Arzı Endeksi yıllık değişim grafiği (haftalık veri)."""
+    data = fetch_data(
+        client,
+        ['TP.KAVRAMSAL.HAMM1.INDX', 'TP.KAVRAMSAL.HAMM2.INDX', 'TP.KAVRAMSAL.HAMM3.INDX'],
+        tarihler["yilonce"], tarihler["bugun"],
+        formulas=[3, 3, 3],
+    )
+    if data is None or len(data) == 0:
         return
-    data.drop('TP_PR_ARZ22', axis=1, inplace=True, errors='ignore')
+    # Orijinal düzey sütunlarını sil (sadece yıllık değişim kalsın)
+    for col in list(data.columns):
+        if col != "Tarih" and "-3" not in col and col != "YEARWEEK":
+            data.drop(col, axis=1, inplace=True, errors='ignore')
+    data.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
     yuzde_degisim_formatla(data)
-    # Tarih dışındaki ilk veri sütununu bul (API versiyonuna göre isim değişebilir)
-    veri_cols = [c for c in data.columns if c != "Tarih"]
-    if not veri_cols:
-        return
-    col = veri_cols[0]
-    data[col] = data[col] * 52
-    data["3 Aylık H.O Yıllıklandırılmış %"] = data[col].rolling(window=13).mean()
-    data.rename(columns={col: 'M3 Para Arzı Haftalık Değişim Yıllıklandırılmış %'}, inplace=True)
+    data.rename(columns={
+        "TP_KAVRAMSAL_HAMM1_INDX-3": "M1 Yıllık Değişim %",
+        "TP_KAVRAMSAL_HAMM2_INDX-3": "M2 Yıllık Değişim %",
+        "TP_KAVRAMSAL_HAMM3_INDX-3": "M3 Yıllık Değişim %",
+    }, inplace=True)
     grafik_ciz(data, axes, (2, 0))
 
 
-def ciz_kredi_degisim(client, axes, tarihler):
-    """Kredi hacmi değişim grafikleri (4 seri, 2 grafik pozisyonuna)."""
-    # Toplam kredi değişim %
-    toplam = fetch_data(client, ['TP.KREDI.L001'],
-                        tarihler["yilonce"], tarihler["bugun"], formulas=[1])
-    if toplam is not None:
-        toplam.drop(["TP_KREDI_L001"], axis=1, inplace=True, errors='ignore')
-        yuzde_degisim_formatla(toplam)
-        toplam.rename(columns={'TP_KREDI_L001-1': 'Toplam Kredi Hacmi Değişim %'}, inplace=True)
-        grafik_ciz(toplam, axes, (2, 2))
+def ciz_yp_krediler(client, axes, tarihler):
+    """YP Krediler düzey grafiği (Tüketici + Ticari + Diğer)."""
+    data = fetch_data(
+        client,
+        ['TP.HPBITABLO2.29', 'TP.HPBITABLO2.30', 'TP.HPBITABLO2.31'],
+        tarihler["yilonce"], tarihler["bugun"],
+    )
+    if data is None or len(data) == 0:
+        return
+    data.rename(columns={
+        "TP_HPBITABLO2_29": "YP Tüketici Kredisi",
+        "TP_HPBITABLO2_30": "YP Ticari Kredi",
+        "TP_HPBITABLO2_31": "YP Diğer Kredi",
+    }, inplace=True)
+    grafik_ciz(data, axes, (2, 2))
 
-    # Tüketici ve kredi kartları değişim %
-    tuketici = fetch_data(client, ['TP.BFTUKKRE.L002'],
-                          tarihler["yilonce"], tarihler["bugun"], formulas=[1])
-    if tuketici is not None:
-        tuketici.drop(['TP_BFTUKKRE_L002'], axis=1, inplace=True, errors='ignore')
-        yuzde_degisim_formatla(tuketici)
-        tuketici.rename(columns={'TP_BFTUKKRE_L002-1': 'Tüketici ve Kredi Kartları Değişim %'}, inplace=True)
-        grafik_ciz(tuketici, axes, (2, 2))
 
-    # Konut kredisi değişim %
-    konut = fetch_data(client, ['TP.BFTUKKRE.L005'],
-                       tarihler["yilonce"], tarihler["bugun"], formulas=[1])
-    if konut is not None:
-        yuzde_degisim_formatla(konut)
-        konut.drop(["TP_BFTUKKRE_L005"], axis=1, inplace=True, errors='ignore')
-        konut.rename(columns={'TP_BFTUKKRE_L005-1': 'Konut Kredisi Hacmi Değişim %'}, inplace=True)
-        grafik_ciz(konut, axes, (2, 3))
-
-    # Araç kredisi değişim %
-    arac = fetch_data(client, ['TP.BFTUKKRE.L007'],
-                      tarihler["yilonce"], tarihler["bugun"], formulas=[1])
-    if arac is not None:
-        arac.drop(["TP_BFTUKKRE_L007"], axis=1, inplace=True, errors='ignore')
-        yuzde_degisim_formatla(arac)
-        arac.rename(columns={'TP_BFTUKKRE_L007-1': 'Araç Kredisi Hacmi Değişim %'}, inplace=True)
-        grafik_ciz(arac, axes, (2, 3))
+def ciz_toplam_kredi_tl_yp(client, axes, tarihler):
+    """TL vs YP Toplam Kredi karşılaştırma grafiği."""
+    data = fetch_data(
+        client,
+        ['TP.HPBITABLO2.24', 'TP.HPBITABLO2.28'],
+        tarihler["yilonce"], tarihler["bugun"],
+    )
+    if data is None or len(data) == 0:
+        return
+    data.rename(columns={
+        "TP_HPBITABLO2_24": "TL Toplam Kredi",
+        "TP_HPBITABLO2_28": "YP Toplam Kredi",
+    }, inplace=True)
+    grafik_ciz(data, axes, (2, 3))
 
 
 def ciz_tlref(client, axes, tarihler):
@@ -458,9 +463,10 @@ def tum_grafikleri_ciz(client, yil: int):
 
     # ---- Pencere 1: Özel hesaplamalı grafikler ----
     ciz_bist_dolar(client, axes, tarihler)
-    ciz_kredi_hacmi_dolar(client, axes, tarihler)
-    ciz_m3_para_arzi(client, axes, tarihler)
-    ciz_kredi_degisim(client, axes, tarihler)
+    ciz_tl_krediler(client, axes, tarihler)
+    ciz_para_arzi(client, axes, tarihler)
+    ciz_yp_krediler(client, axes, tarihler)
+    ciz_toplam_kredi_tl_yp(client, axes, tarihler)
     ciz_tlref(client, axes, tarihler)
 
     # ---- Pencere 2: Basit grafikler ----

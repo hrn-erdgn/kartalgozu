@@ -106,9 +106,10 @@ WINDOW1_SIMPLE = [
 # Bu grafikler config-driven döngüyle değil, charts.py'deki özel fonksiyonlarla çizilir.
 WINDOW1_CUSTOM_CHARTS = [
     "bist_dolar",         # BIST100 / USD → (0, 2)
-    "kredi_hacmi_dolar",  # Toplam Kredi Hacmi / USD → (0, 3)
-    "m3_para_arzi",       # M3 yıllıklandırılmış % → (2, 0)
-    "kredi_degisim",      # Toplam kredi + Tüketici KK + Konut + Araç → (2, 2), (2, 3)
+    "tl_krediler",        # TL Krediler (Tüketici+Ticari+Diğer) düzey → (0, 3)
+    "para_arzi",          # M1/M2/M3 Yıllık Değişim % → (2, 0)
+    "yp_krediler",        # YP Krediler (Tüketici+Ticari+Diğer) düzey → (2, 2)
+    "toplam_kredi_tl_yp", # TL vs YP Toplam Kredi → (2, 3)
     "tlref",              # TLRef + Bileşik → (3, 3)
 ]
 
@@ -152,10 +153,14 @@ WINDOW2_DUAL_CHARTS = [
 #   TP.TLDOV01.SWP      - TL/Dolar Swap
 #
 # Kredi & Likidite:
-#   TP.KREDI.L001        - Toplam Kredi Hacmi (Bin TL)
-#   TP.BFTUKKRE.L002     - Tüketici Kredisi ve Kredi Kartları
-#   TP.BFTUKKRE.L005     - Konut Kredisi Hacmi
-#   TP.BFTUKKRE.L007     - Araç Kredisi Hacmi
+#   TP.HPBITABLO2.24     - TL Toplam Kredi
+#   TP.HPBITABLO2.25     - TL Tüketici Kredisi (Bireysel KK Dahil)
+#   TP.HPBITABLO2.26     - TL Ticari Kredi (Kurumsal KK Dahil)
+#   TP.HPBITABLO2.27     - TL Diğer Krediler
+#   TP.HPBITABLO2.28     - YP Toplam Kredi
+#   TP.HPBITABLO2.29     - YP Tüketici Kredisi (Bireysel KK Dahil)
+#   TP.HPBITABLO2.30     - YP Ticari Kredi (Kurumsal KK Dahil)
+#   TP.HPBITABLO2.31     - YP Diğer Krediler
 #   TP.PPIBSM            - Bankalar Serbest Mevduatı
 #   TP.PPIGBTL            - Gün Başı Toplam Likidite
 #
@@ -174,7 +179,9 @@ WINDOW2_DUAL_CHARTS = [
 #   TP.BISTTLREF.ORAN    - TLRef Faiz Oranı
 #
 # Parasal Göstergeler:
-#   TP.PR.ARZ22          - M3 Para Arzı
+#   TP.KAVRAMSAL.HAMM1.INDX - M1 Para Arzı Endeksi (Kur Etkisinden Arındırılmamış)
+#   TP.KAVRAMSAL.HAMM2.INDX - M2 Para Arzı Endeksi (Kur Etkisinden Arındırılmamış)
+#   TP.KAVRAMSAL.HAMM3.INDX - M3 Para Arzı Endeksi (Kur Etkisinden Arındırılmamış)
 #   TP.AB.TOPLAM         - TCMB Toplam Rezerv (Milyon $)
 #   TP.APIFON3           - Açık Piyasa İşlemleri Net Fonlama
 #
