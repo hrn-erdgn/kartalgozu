@@ -1,0 +1,4 @@
+evds>=0.4.0
+pandas>=1.5.0
+matplotlib>=3.5.0
+python-dotenv>=1.0.0

@@ -1,25 +1,71 @@
 # Kartal Gözü
 
-Bu proje, Türkiye Cumhuriyet Merkez Bankası'nın (TCMB) Elektronik Veri Dağıtım Sistemi'nden (EVDS) makroekonomik verileri çekip, bu verileri anlamlı grafikler haline getiren bir Python uygulamasıdır.
+Bu proje, Türkiye Cumhuriyet Merkez Bankası'nın (TCMB) Elektronik Veri Dağıtım Sistemi'nden (EVDS3) makroekonomik verileri çekip, bu verileri anlamlı grafikler haline getiren bir Python uygulamasıdır.
 
 ![SS](https://github.com/hrn-erdgn/kartalgozu/blob/main/kartalgozu1.jpg)
 ![SS](https://github.com/hrn-erdgn/kartalgozu/blob/main/kartalgozu2.jpg)
-(2. Pencere eklenmiş ve geliştirme aşamasındadır.) 
-### Önkoşullar
-Bu projeyi çalıştırmadan önce, Python'un yüklü olduğundan ve aşağıdaki kütüphanelerin kurulu olduğundan emin olun:
-- matplotlib
-- pandas
-- evds
-### Kurulum
-1. Gerekli Python kütüphanelerini kurun
-2. `kartalgozu.py` dosyasında bulunan `evdsAPI('Beni_Sil_Api_Key_Yaz')` satırını kendi EVDS API anahtarınızla değiştirin.
-3. Uygulamayı şu komutla çalıştırın: `python kartalgozu.py` (Varsayılan olarak 1 yıllık veriler getirilir.
-4. Geçmişe dönük daha fazla veri getirmek için örn. `python kartalgozu.py 3` komutunu çalıştırın son 3 yıllık veriler gelecektir.
-### EVDS API Anahtarı nasıl alınır 
-1. EVDS sayfasına giriş yaptıktan sonra Giriş Yap ve Kayıt Ol bağlantılarını izleyerek bir EVDS hesabı oluşturun
-2. Ardından kullanıcı adınızın altında yer alan profil bağlantısına tıklayınız.
-3. ![api](https://github.com/fatihmete/evds/blob/master/01.png)
-4. Profil sayfanızın alt kısmında yer alan "API Anahtarı" butonuna tıklayınız ve açılan kutucukta yer alan
-değeri kopyalayınız.
+
+## Proje Yapısı
+
+| Dosya | Açıklama |
+|-------|----------|
+| `kartalgozu.py` | Ana giriş noktası (CLI) |
+| `config.py` | Tüm EVDS seri kodları ve grafik konfigürasyonları |
+| `api.py` | EVDS API bağlantı katmanı (hata yönetimi dahil) |
+| `charts.py` | Grafik çizim motoru |
+| `utils.py` | Yardımcı fonksiyonlar (tarih, format) |
+
+## Önkoşullar
+
+- Python 3.8+
+- TCMB EVDS API anahtarı
+
+## Kurulum
+
+1. Gerekli kütüphaneleri kurun:
+```bash
+pip install -r requirements.txt
+```
+
+2. `.env.example` dosyasını `.env` olarak kopyalayıp API anahtarınızı girin:
+```bash
+cp .env.example .env
+# .env dosyasını düzenleyin: EVDS_API_KEY=sizin_api_anahtariniz
+```
+
+3. Uygulamayı çalıştırın:
+```bash
+python kartalgozu.py
+```
+
+## Kullanım
+
+```bash
+python kartalgozu.py          # Varsayılan 1 yıllık veri
+python kartalgozu.py 3        # Son 3 yıllık veri
+python kartalgozu.py 10       # Maksimum 10 yıllık veri
+```
+
+## EVDS API Anahtarı Nasıl Alınır
+
+1. [EVDS3](https://evds3.tcmb.gov.tr) sayfasına giriş yapıp bir hesap oluşturun
+2. Kullanıcı adınızın altında yer alan profil bağlantısına tıklayın
+3. Profil sayfanızın alt kısmında yer alan "API Anahtarı" butonuna tıklayıp değeri kopyalayın
+
+## Gösterilen Veriler
+
+### Pencere 1 (Günlük Veriler)
+- Dolar/TL, BIST 100, BIST100 Dolar Bazlı, Toplam Kredi Hacmi ($)
+- TCMB Rezervi, APİ Net Fonlama, TL/Dolar Swap, Likidite
+- M3 Para Arzı, Yabancı Menkul Kıymet, Kredi Değişimleri
+- Faiz Koridoru, Mevduat Faizleri, Kredi Faizleri, TLRef
+
+### Pencere 2 (Aylık Veriler)
+- Enflasyon (TÜFE/ÜFE), Konut Fiyat Endeksi, Bütçe Dengesi, İşsizlik
+- Reel Kesim Güven Endeksi, Kapasite Kullanım, Tüketici Güven, Carry Trade
+
+## Seri Kodları
+
+Tüm EVDS seri kodları `config.py` dosyasında merkezi olarak tanımlanmıştır. Seri kodu değişikliklerinde sadece bu dosyayı güncellemeniz yeterlidir.
 
 Evds python kütüphanesi için @fatihmete'ye teşekkürler.
