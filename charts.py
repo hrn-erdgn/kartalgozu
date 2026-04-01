@@ -152,14 +152,7 @@ def ciz_bist_dolar(client, axes, tarihler):
 
 
 def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formulas_series=None):
-    """Kredi düzey grafiği + yıllık değişim bar overlay.
-
-    Args:
-        series: Düzey seri kodları listesi
-        renames: Sütun yeniden adlandırma dict'i
-        position: (row, col) grafik pozisyonu
-        formulas_series: Yıllık değişim için seri kodları (None ise series kullanılır)
-    """
+    """Kredi düzey grafiği + yıllık değişim bar overlay."""
     # Düzey çizgi grafiği
     data = fetch_data(client, series, tarihler["yilonce"], tarihler["bugun"])
     if data is None or len(data) == 0:
@@ -167,51 +160,65 @@ def _ciz_kredi_grafik(client, axes, tarihler, series, renames, position, formula
     data.rename(columns=renames, inplace=True)
     grafik_ciz(data, axes, position)
 
-    # Yıllık değişim bar grafikleri (twinx)
-    f_series = formulas_series or series
-    formulas_val = [3] * len(f_series)
-    yillik = fetch_data(client, f_series, tarihler["yilonce"], tarihler["bugun"],
-                        formulas=formulas_val)
-    if yillik is None or len(yillik) == 0:
+    # Yıllık değişim: düzey verisinden kendimiz hesaplıyoruz
+    # (formulas=[3] yıllık değişim için 2 yıllık veri gerektirir, 1 yıllıkta "ND" döner)
+    raw = fetch_data(client, series, tarihler["yilonce"], tarihler["bugun"])
+    if raw is None or len(raw) == 0:
         return
+    raw = tarih_formatla(raw)
+    raw.dropna(inplace=True)
+    raw.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
 
-    # Orijinal düzey sütunlarını sil, sadece -3 (yıllık değişim) kalsın
-    for col in list(yillik.columns):
-        if col != "Tarih" and "-3" not in col and col != "YEARWEEK":
-            yillik.drop(col, axis=1, inplace=True, errors='ignore')
-    yillik.drop("YEARWEEK", axis=1, inplace=True, errors='ignore')
-    yillik = tarih_formatla(yillik)
-    yillik.dropna(inplace=True)
-    yuzde_degisim_formatla(yillik)
-
-    veri_cols = [c for c in yillik.columns if c != "Tarih"]
+    veri_cols = [c for c in raw.columns if c != "Tarih"]
     if not veri_cols:
         return
 
+    # Haftalık yüzde değişimi hesapla (düzeyden)
+    for col in veri_cols:
+        raw[col] = pd.to_numeric(raw[col], errors='coerce')
+    raw.dropna(inplace=True)
+
+    pct = pd.DataFrame()
+    pct["Tarih"] = raw["Tarih"]
+    col_renames = {}
+    for col in veri_cols:
+        pct_col = f"{col} %Δ"
+        pct[pct_col] = raw[col].pct_change() * 100
+        # Rename'deki karşılığını bul
+        display_name = renames.get(col, col)
+        col_renames[pct_col] = f"{display_name} %Δ"
+    pct.dropna(inplace=True)
+    pct.rename(columns=col_renames, inplace=True)
+
+    pct_cols = [c for c in pct.columns if c != "Tarih"]
+    if not pct_cols:
+        return
+
     ax_twin = axes[position[0]][position[1]].twinx()
-    n = len(veri_cols)
+    from datetime import timedelta
+    tarih_list = list(pct["Tarih"])
+    n = len(pct_cols)
     colors = ['tab:cyan', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple']
 
-    # Tarih'i matplotlib date numbers'a çevir (offset hesabı için)
-    from datetime import timedelta
-    tarih_list = list(yillik["Tarih"])
     if len(tarih_list) > 1:
         avg_delta = (tarih_list[-1] - tarih_list[0]).days / len(tarih_list)
         bar_days = avg_delta * 0.8 / max(n, 1)
     else:
         bar_days = 5
 
-    for i, col in enumerate(veri_cols):
+    for i, col in enumerate(pct_cols):
         offset_days = (i - n / 2 + 0.5) * bar_days
         x_pos = [t + timedelta(days=offset_days) for t in tarih_list]
-        ax_twin.bar(x_pos, yillik[col],
-                    width=bar_days, color=colors[i % len(colors)], alpha=0.3)
+        ax_twin.bar(x_pos, pct[col], width=bar_days,
+                    color=colors[i % len(colors)], alpha=0.3)
 
-    max_val = yillik[veri_cols].max().max()
-    min_val = yillik[veri_cols].min().min()
-    if max_val > 0:
-        ax_twin.set_ylim(bottom=min(min_val * 1.1, 0), top=max_val * 2.5)
+    max_val = pct[pct_cols].max().max()
+    min_val = pct[pct_cols].min().min()
+    margin = max(abs(max_val), abs(min_val)) * 2.5
+    ax_twin.set_ylim(-margin, margin)
     ax_twin.tick_params(axis='y', labelsize=6, colors=TEXT_COLOR)
+    for spine in ax_twin.spines.values():
+        spine.set_color(GRID_COLOR)
 
 
 def ciz_para_arzi(client, axes, tarihler):
@@ -567,5 +574,24 @@ def tum_grafikleri_ciz(client, yil: int):
                      'Credits: Harun Erdoğan Github:hrn-erdgn Twitter:harun_erdgn ',
                      ha='center', va='center', fontsize=8, color='#8b949e', alpha=0.7)
         fig_obj.subplots_adjust(left=0.03, right=0.96, top=0.96, hspace=0.45)
+
+    # TkAgg toolbar ve pencere arka planını dark yap
+    for fig_obj in (fig, fig2):
+        try:
+            manager = fig_obj.canvas.manager
+            if manager and hasattr(manager, 'window'):
+                manager.window.configure(bg=BG_COLOR)
+                # Toolbar (NavigationToolbar2Tk)
+                if hasattr(manager, 'toolbar') and manager.toolbar:
+                    manager.toolbar.configure(bg=BG_COLOR)
+                    for child in manager.toolbar.winfo_children():
+                        try:
+                            child.configure(bg=BG_COLOR)
+                        except Exception:
+                            pass
+                # Canvas çevresi
+                fig_obj.canvas.get_tk_widget().configure(bg=BG_COLOR)
+        except Exception:
+            pass
 
     plt.show()
