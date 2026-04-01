@@ -39,7 +39,11 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
     if "YEARWEEK" in veri.columns:
         veri.drop("YEARWEEK", axis=1, inplace=True)
 
-    for col in veri.columns[1:]:
+    data_cols = veri.columns[1:]
+    if len(data_cols) == 0:
+        return
+
+    for col in data_cols:
         cizgi, = ax.plot(veri["Tarih"], veri[col], label=col)
         ax.annotate(
             degerformatla(veri[col].iloc[-1], 1),
@@ -55,8 +59,10 @@ def grafik_ciz(veri, axes, position, date_format="%d-%m-%Y"):
     ax.yaxis.set_major_formatter(formatter)
     ax.tick_params(axis='x', rotation=45, labelsize=8)
     ax.tick_params(axis='y', rotation=45, labelsize=6)
-    if (veri[col] < 0).any():
-        ax.axhline(0, color='black', ls='--', linewidth=1)
+    for col in data_cols:
+        if (veri[col] < 0).any():
+            ax.axhline(0, color='black', ls='--', linewidth=1)
+            break
 
 
 def bar_grafik_ekle(ax_twin, x_range, veri1, veri2, label1, label2,
